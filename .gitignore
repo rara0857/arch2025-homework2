@@ -1,6 +1,7 @@
 *
 !.gitignore
 
-!HW1_UF8/
-!Q2_A/
-!Q3_C/
+!HW1_UF8/**
+!Q2_A/**
+!Q3_C/**
+README.md
