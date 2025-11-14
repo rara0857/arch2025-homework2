@@ -135,43 +135,17 @@ static void print_dec(unsigned long val)
     printstr(p, (buf + sizeof(buf) - p));
 }
 
-extern uint32_t clz(uint32_t val);
-extern uint32_t uf8_decode(uint32_t val);
-extern uint32_t uf8_encode(uint32_t val);
+extern void hanoi_asm(void);
 
-/* Test encode/decode round-trip */
-static bool test_uf8_codec(void)
+void print_hanoi_move(unsigned long disk, char from, char to)
 {
-    int32_t previous_value = -1;
-    bool passed = true;
-
-    for (int i = 0; i < 256; i++) {
-        uint8_t fl = i;
-        int32_t value = uf8_decode(fl);
-        uint8_t fl2 = uf8_encode(value);
-
-        if (fl != fl2) {
-            print_hex(i);
-            TEST_LOGGER(": produces value ");
-            print_dec(value);
-            TEST_LOGGER(" but encodes back to ");
-            print_hex(fl2);
-            TEST_LOGGER("\n");
-            passed = false;
-        }
-
-        if (value <= previous_value) {
-            passed = false;
-            print_hex(fl);
-            TEST_LOGGER(": value ");
-            print_dec(value);
-            TEST_LOGGER(" <= previous_value ");
-            print_dec(previous_value);
-            TEST_LOGGER("\n");
-        }
-        previous_value = value;
-    }
-    return passed;
+    TEST_LOGGER("Move Disk ");
+    print_dec(disk);
+    TEST_LOGGER(" from ");
+    printstr(&from, 1);
+    TEST_LOGGER(" to ");
+    printstr(&to, 1);
+    TEST_LOGGER("\n");
 }
 
 int main(void)
@@ -179,21 +153,20 @@ int main(void)
     uint64_t start_cycles, end_cycles, cycles_elapsed;
     uint64_t start_instret, end_instret, instret_elapsed;
 
-    TEST_LOGGER("\n=== UF8 Codec===\n\n");
+    TEST_LOGGER("\n=== Q2 Hanoi ASM Test ===\n\n");
 
     start_cycles = get_cycles();
     start_instret = get_instret();
 
-    bool all_passed = test_uf8_codec();
+    hanoi_asm();
 
     end_cycles = get_cycles();
     end_instret = get_instret();
     
     cycles_elapsed = end_cycles - start_cycles;
     instret_elapsed = end_instret - start_instret;
-    if(all_passed) {
-        TEST_LOGGER("   UF8 Codec: ALL PASSED\n");
-    }
+
+    TEST_LOGGER("\n   Hanoi Test Completed.\n");
     TEST_LOGGER("   Cycles: ");
     print_dec((unsigned long) cycles_elapsed);
     TEST_LOGGER("\n   Instructions: ");
