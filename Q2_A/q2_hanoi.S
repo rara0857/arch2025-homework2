@@ -129,7 +129,6 @@ display_move:
     mv      a1, x11
     mv      a2, x12
     call    print_hanoi_move
-    # --- END MODIFIED PART ---
 
     # BLANK 26: Calculate storage offset
     slli    x5, x9, 2

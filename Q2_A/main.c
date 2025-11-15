@@ -153,7 +153,7 @@ int main(void)
     uint64_t start_cycles, end_cycles, cycles_elapsed;
     uint64_t start_instret, end_instret, instret_elapsed;
 
-    TEST_LOGGER("\n=== Q2 Hanoi ASM Test ===\n\n");
+    TEST_LOGGER("\n=== Q2_A Test ===\n\n");
 
     start_cycles = get_cycles();
     start_instret = get_instret();
