@@ -2,10 +2,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
-
 #define REC_INV_SQRT_CACHE (16)
 typedef uint8_t uf8;
 
@@ -50,7 +46,7 @@ static inline unsigned clz(uint32_t x)
             "ecall;"                            \
             :                                   \
             : "r"(ptr), "r"(length)             \
-            : "a0", "a1", "a2", "a7");          \
+            : "a0", "a1", "a2", "a7","memory");          \
     } while (0)
 
 #define TEST_OUTPUT(msg, length) printstr(msg, length)
@@ -118,7 +114,6 @@ static uint32_t umul(uint32_t a, uint32_t b)
     return result;
 }
 
-/* Provide __mulsi3 for GCC */
 uint32_t __mulsi3(uint32_t a, uint32_t b)
 {
     return umul(a, b);
@@ -137,11 +132,39 @@ uint64_t __muldi3(uint64_t a, uint64_t b)
     }
     return result;
 }
-/* Simple integer to hex string conversion */
+
+typedef union {
+    uint64_t u64;
+    struct {
+        uint32_t lo;
+        uint32_t hi;
+    } s;
+} val64;
+
+uint64_t __lshrdi3(uint64_t a, int b) {
+    val64 in, out;
+    in.u64 = a;
+    b &= 63; 
+    if (b == 0) {
+        return a;
+    }
+    if (b >= 32) {
+        out.s.lo = in.s.hi >> (b - 32);
+        out.s.hi = 0;
+    } else {
+        out.s.hi = in.s.hi >> b;
+        out.s.lo = (in.s.hi << (32 - b)) | (in.s.lo >> b);
+    }
+    
+    return out.u64;
+}
+
 static void print_hex(unsigned long val)
 {
     char buf[20];
     char *p = buf + sizeof(buf) - 1;
+    *p = '\n';
+    p--;
 
     if (val == 0) {
         *p = '0';
@@ -154,11 +177,6 @@ static void print_hex(unsigned long val)
             val >>= 4;
         }
     }
-
-    *p = 'x';
-    p--;
-    *p = '0';
-    p--;
 
     p++;
     printstr(p, (buf + sizeof(buf) - p));
@@ -247,15 +265,14 @@ uint32_t fast_distance_3d(int32_t dx, int32_t dy, int32_t dz)
 }
 
 int main() {
-    int num = 16;
-    uint64_t start_cycles, end_cycles, cycles_elapsed;
-    uint64_t start_instret, end_instret, instret_elapsed;
+    volatile int num =4;
+    volatile uint64_t start_cycles, end_cycles, cycles_elapsed;
+    volatile uint64_t start_instret, end_instret, instret_elapsed;
 
     TEST_LOGGER("\n=== Q3_C Test ===\n\n");
     TEST_LOGGER("Num: ");
     print_dec((unsigned long)num);
     TEST_LOGGER("\n");
-
     start_cycles = get_cycles();
     start_instret = get_instret();
 

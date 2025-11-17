@@ -7,16 +7,17 @@ EMU ?= ../../../build/rv32emu
 
 AFLAGS = -g $(ARCH)
 CFLAGS = -g $(ARCH)
+
 LDFLAGS = -T $(LINKER_SCRIPT)
 EXEC = test.elf
 
-CC = $(CROSS_COMPILE)gcc
+CC = $(CROSS_COMPILE)gcc 
 AS = $(CROSS_COMPILE)as
 LD = $(CROSS_COMPILE)ld
 OBJDUMP = $(CROSS_COMPILE)objdump
 
-OBJS = start.o perfcounter.o q3-rsqrt-origin.o
-
+#OBJS = start.o perfcounter.o q3-rsqrt-origin.o
+OBJS = start.o perfcounter.o q3-rsqrt.o main.o
 .PHONY: all run dump clean
 
 all: $(EXEC)

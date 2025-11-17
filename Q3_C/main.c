@@ -2,7 +2,18 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef uint8_t uf8;
+#define REC_INV_SQRT_CACHE (16)
+extern unsigned clz(uint32_t x);
+extern uint32_t fast_rsqrt(uint32_t x);
+extern void newton_step(uint32_t *rec_inv_sqrt, uint32_t x);
+extern uint32_t fast_distance_3d(int32_t dx, int32_t dy, int32_t dz);
+
+static const uint32_t inv_sqrt_cache[REC_INV_SQRT_CACHE] = {
+    ~0U,        ~0U, 3037000500, 2479700525,
+    2147483647, 1920767767, 1753413056, 1623345051,
+    1518500250, 1431655765, 1358187914, 1294981364,
+    1239850263, 1191209601, 1147878294, 1108955788
+};
 
 #define printstr(ptr, length)                   \
     do {                                        \
@@ -14,7 +25,7 @@ typedef uint8_t uf8;
             "ecall;"                            \
             :                                   \
             : "r"(ptr), "r"(length)             \
-            : "a0", "a1", "a2", "a7");          \
+            : "a0", "a1", "a2", "a7","memory");          \
     } while (0)
 
 #define TEST_OUTPUT(msg, length) printstr(msg, length)
@@ -68,31 +79,12 @@ static unsigned long umod(unsigned long dividend, unsigned long divisor)
 
     return remainder;
 }
-
-/* Software multiplication for RV32I (no M extension) */
-static uint32_t umul(uint32_t a, uint32_t b)
-{
-    uint32_t result = 0;
-    while (b) {
-        if (b & 1)
-            result += a;
-        a <<= 1;
-        b >>= 1;
-    }
-    return result;
-}
-
-/* Provide __mulsi3 for GCC */
-uint32_t __mulsi3(uint32_t a, uint32_t b)
-{
-    return umul(a, b);
-}
-
-/* Simple integer to hex string conversion */
 static void print_hex(unsigned long val)
 {
     char buf[20];
     char *p = buf + sizeof(buf) - 1;
+    *p = '\n';
+    p--;
 
     if (val == 0) {
         *p = '0';
@@ -105,11 +97,6 @@ static void print_hex(unsigned long val)
             val >>= 4;
         }
     }
-
-    *p = 'x';
-    p--;
-    *p = '0';
-    p--;
 
     p++;
     printstr(p, (buf + sizeof(buf) - p));
@@ -135,72 +122,38 @@ static void print_dec(unsigned long val)
     printstr(p, (buf + sizeof(buf) - p));
 }
 
-extern uint32_t clz(uint32_t val);
-extern uint32_t uf8_decode(uint32_t val);
-extern uint32_t uf8_encode(uint32_t val);
+int main() {
+    volatile int num = 16;
+    volatile uint64_t start_cycles, end_cycles, cycles_elapsed;
+    volatile uint64_t start_instret, end_instret, instret_elapsed;
 
-/* Test encode/decode round-trip */
-static bool test_uf8_codec(void)
-{
-    int32_t previous_value = -1;
-    bool passed = true;
-
-    for (int i = 0; i < 256; i++) {
-        uint8_t fl = i;
-        int32_t value = uf8_decode(fl);
-        uint8_t fl2 = uf8_encode(value);
-
-        if (fl != fl2) {
-            print_hex(i);
-            TEST_LOGGER(": produces value ");
-            print_dec(value);
-            TEST_LOGGER(" but encodes back to ");
-            print_hex(fl2);
-            TEST_LOGGER("\n");
-            passed = false;
-        }
-
-        if (value <= previous_value) {
-            passed = false;
-            print_hex(fl);
-            TEST_LOGGER(": value ");
-            print_dec(value);
-            TEST_LOGGER(" <= previous_value ");
-            print_dec(previous_value);
-            TEST_LOGGER("\n");
-        }
-        previous_value = value;
-    }
-    return passed;
-}
-
-int main(void)
-{
-    uint64_t start_cycles, end_cycles, cycles_elapsed;
-    uint64_t start_instret, end_instret, instret_elapsed;
-
-    TEST_LOGGER("\n=== UF8 Codec===\n\n");
-
+    TEST_LOGGER("\n=== Q3_C Test ===\n\n");
+    TEST_LOGGER("Num: ");
+    print_dec((unsigned long)num);
+    TEST_LOGGER("\n");
     start_cycles = get_cycles();
     start_instret = get_instret();
 
-    bool all_passed = test_uf8_codec();
+    uint32_t result = fast_rsqrt(num);
 
     end_cycles = get_cycles();
     end_instret = get_instret();
-    
+
     cycles_elapsed = end_cycles - start_cycles;
     instret_elapsed = end_instret - start_instret;
-    if(all_passed) {
-        TEST_LOGGER("   UF8 Codec: ALL PASSED\n");
-    }
-    TEST_LOGGER("   Cycles: ");
-    print_dec((unsigned long) cycles_elapsed);
-    TEST_LOGGER("\n   Instructions: ");
-    print_dec((unsigned long) instret_elapsed);
+
+    TEST_LOGGER("Fast_rsqrt result (Q0.16): ");
+    print_dec((unsigned long)result);
+    TEST_LOGGER("\n\n");
+
+    TEST_LOGGER("Cycles: ");
+    print_dec((unsigned long)cycles_elapsed);
+    TEST_LOGGER("\n");
+
+    TEST_LOGGER("Instructions: ");
+    print_dec((unsigned long)instret_elapsed);
     TEST_LOGGER("\n");
 
     TEST_LOGGER("\n=== All Tests Completed ===\n");
-
     return 0;
 }
