@@ -5,18 +5,18 @@ LINKER_SCRIPT = linker.ld
 
 EMU ?= ../../../build/rv32emu
 
-override AFLAGS = -g $(ARCH)
-override CFLAGS = -g -march=rv32i_zicsr
+AFLAGS = -g $(ARCH)
+CFLAGS = -g $(ARCH)
+
 LDFLAGS = -T $(LINKER_SCRIPT)
 EXEC = test.elf
 
-CC = $(CROSS_COMPILE)gcc
+CC = $(CROSS_COMPILE)gcc 
 AS = $(CROSS_COMPILE)as
 LD = $(CROSS_COMPILE)ld
 OBJDUMP = $(CROSS_COMPILE)objdump
 
 OBJS = start.o main.o perfcounter.o q2_hanoi.o
-
 .PHONY: all run dump clean
 
 all: $(EXEC)
@@ -25,6 +25,9 @@ $(EXEC): $(OBJS) $(LINKER_SCRIPT)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
 %.o: %.S
+	$(AS) $(AFLAGS) $< -o $@
+
+%.o: %.s
 	$(AS) $(AFLAGS) $< -o $@
 
 %.o: %.c

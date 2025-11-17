@@ -14,7 +14,7 @@ typedef uint8_t uf8;
             "ecall;"                            \
             :                                   \
             : "r"(ptr), "r"(length)             \
-            : "a0", "a1", "a2", "a7");          \
+            : "a0", "a1", "a2", "a7","memory");          \
     } while (0)
 
 #define TEST_OUTPUT(msg, length) printstr(msg, length)
